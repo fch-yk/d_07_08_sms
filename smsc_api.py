@@ -1,22 +1,54 @@
-import requests
-from environs import Env
+import asks
+from trio import TrioDeprecationWarning
+import asyncclick as click
+import warnings
+from dotenv import load_dotenv
 
 
-def main():
-    env = Env()
-    env.read_env()
-    url = 'https://smsc.ru/sys/send.php'
-
+@click.command()
+@click.option(
+    '--login',
+    envvar='SMSC_LOGIN',
+    help='login'
+)
+@click.option(
+    '--password',
+    envvar='SMSC_PSW',
+    help='password'
+)
+@click.option(
+    '-m',
+    '--message',
+    envvar='SMSC_MES',
+    default='Test message',
+    help='message'
+)
+@click.option(
+    '-p',
+    '--phones',
+    envvar='SMSC_PHONES',
+    help='One or more phone numbers separated by commas'
+)
+@click.option(
+    '-v',
+    '--valid',
+    envvar='SMSC_VALID',
+    default='1',
+    help='message time to live (in hours)',
+)
+async def main(login, password, message, phones, valid):
     payload = {
-        'login': env.str('SMSC_LOGIN'),
-        'psw': env.str('SMSC_PSW'),
-        'mes': env.str('SMSC_MES'),
-        'phones': env.str('SMSC_PHONES')
+        'login': login,
+        'psw': password,
+        'mes': message,
+        'phones': phones,
+        'valid': valid,
     }
-    response = requests.post(url, params=payload, timeout=100)
-    print(response.text)
+    url = 'https://smsc.ru/sys/send.php'
+    response = await asks.get(url, params=payload)
     response.raise_for_status()
 
-
 if __name__ == '__main__':
-    main()
+    load_dotenv()
+    warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
+    main(_anyio_backend="trio")
