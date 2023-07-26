@@ -1,11 +1,12 @@
+import logging
 import warnings
 from typing import Dict
+from unittest.mock import patch
 
 import asks
 import asyncclick as click
 from dotenv import load_dotenv
 from trio import TrioDeprecationWarning
-import logging
 
 logger = logging.getLogger(__file__)
 
@@ -112,9 +113,14 @@ async def main(login, password, message, phones, valid, debug_mode):
         logging.basicConfig()
         logger.setLevel(logging.DEBUG)
 
-    request_smsc = RequestSMSC(login, password)
-    sending_response = await request_smsc.send(message, phones, valid)
-    # sending_response = {'id': 411}
+    with patch.object(
+        RequestSMSC,
+        'send',
+        return_value={'id': 443, 'cnt': 1}
+    ):
+        request_smsc = RequestSMSC(login, password)
+        sending_response = await request_smsc.send(message, phones, valid)
+
     logger.debug('send responsce: %s', sending_response)
     for phone in phones.split(','):
         status_response = await request_smsc.get_status(
