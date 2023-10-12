@@ -116,10 +116,13 @@ async def main(login, password, message, phones, valid, debug_mode):
     with patch.object(
         RequestSMSC,
         'send',
-        return_value={'id': 443, 'cnt': 1}
+        return_value={'id': 104062993, 'cnt': 1}
     ):
         request_smsc = RequestSMSC(login, password)
         sending_response = await request_smsc.send(message, phones, valid)
+
+    # request_smsc = RequestSMSC(login, password)
+    # sending_response = await request_smsc.send(message, phones, valid)
 
     logger.debug('send responsce: %s', sending_response)
     for phone in phones.split(','):
@@ -127,7 +130,7 @@ async def main(login, password, message, phones, valid, debug_mode):
             phone,
             sending_id=sending_response['id']
         )
-        logger.debug('status responsce: %s', status_response)
+        logger.debug('status response: %s', status_response)
 
 if __name__ == '__main__':
     load_dotenv()
