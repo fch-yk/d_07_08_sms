@@ -1,12 +1,12 @@
 import logging
 from unittest.mock import patch
 
+import trio
+from pydantic import BaseModel, ValidationError, constr
 from quart import render_template, request, websocket
 from quart_trio import QuartTrio
 
 from smsc_api import RequestSMSC
-from pydantic import BaseModel, ValidationError, constr
-
 
 app = QuartTrio(__name__)
 app.config.from_prefixed_env(prefix='SMSC')
@@ -73,10 +73,9 @@ async def json():
 
 @app.websocket("/ws")
 async def ws():
-    # while True:
-    #     await websocket.send("hello")
-    #     await websocket.send_json({"hello": "world"})
-    pass
+    while True:
+        await trio.sleep(1)
+        await websocket.send_json({})
 
 
 if __name__ == "__main__":
