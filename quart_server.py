@@ -1,3 +1,4 @@
+import datetime
 import logging
 from unittest.mock import patch
 
@@ -73,9 +74,43 @@ async def json():
 
 @app.websocket("/ws")
 async def ws():
+    delivered_01 = 0
+    delivered_02 = 0
+    total_01 = 345
+    total_02 = 3993
+
     while True:
         await trio.sleep(1)
-        await websocket.send_json({})
+        timestamp = datetime.datetime.now().timestamp()
+        await websocket.send_json(
+            {
+                "msgType": "SMSMailingStatus",
+                "SMSMailings": [
+                    {
+                        "timestamp": timestamp,
+                        "SMSText": "Сегодня гроза! Будьте осторожны!",
+                        "mailingId": "1",
+                        "totalSMSAmount": total_01,
+                        "deliveredSMSAmount": delivered_01,
+                        "failedSMSAmount": 5,
+                    },
+                    {
+                        "timestamp": timestamp,
+                        "SMSText": "Новогодняя акция!!! Получи скидку!!!",
+                        "mailingId": "new-year",
+                        "totalSMSAmount": total_02,
+                        "deliveredSMSAmount": delivered_02,
+                        "failedSMSAmount": 0,
+                    },
+                ]
+            }
+        )
+        delivered_01 += total_01 // 100
+        if delivered_01 > total_01:
+            delivered_01 = 0
+        delivered_02 += total_02 // 100
+        if delivered_02 > total_02:
+            delivered_02 = 0
 
 
 if __name__ == "__main__":
