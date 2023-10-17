@@ -1,6 +1,10 @@
-import asyncio
-import aioredis
 import argparse
+import asyncio
+import warnings
+
+import aioredis
+import trio_asyncio
+from trio import TrioDeprecationWarning
 
 from db import Database
 
@@ -21,7 +25,6 @@ def create_argparser():
 async def main():
     parser = create_argparser()
     args = parser.parse_args()
-    print(args.redis_uri)
     redis = aioredis.from_url(args.redis_uri, decode_responses=True)
 
     try:
@@ -87,4 +90,5 @@ async def main():
         await redis.close()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
+    trio_asyncio.run(trio_asyncio.aio_as_trio(main))
