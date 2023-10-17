@@ -1,8 +1,10 @@
 import datetime
 import logging
+import os
 from unittest.mock import patch
 
 import trio
+from dotenv import load_dotenv
 from pydantic import BaseModel, ValidationError, constr
 from quart import render_template, request, websocket
 from quart_trio import QuartTrio
@@ -11,10 +13,12 @@ from smsc_api import RequestSMSC
 
 app = QuartTrio(__name__)
 app.config.from_prefixed_env(prefix='SMSC')
+print(dir(app.config))
 smsc_connection = RequestSMSC(
-    login=app.config['LOGIN'],
-    password=app.config['PSW']
+    login=os.getenv('SMSC_LOGIN', ''),
+    password=os.getenv('SMSC_PSW', '')
 )
+
 logger = logging.getLogger(__file__)
 
 
@@ -49,19 +53,23 @@ async def send_sms():
         return_value={'id': 104062995, 'cnt': 1}
     ):
         request_smsc = RequestSMSC(
-            login=app.config['LOGIN'],
-            password=app.config['PSW']
+            login=os.getenv('SMSC_LOGIN', ''),
+            password=os.getenv('SMSC_PSW', '')
         )
         sending_response = await request_smsc.send(
-            input_form.text, app.config['PHONES'], app.config['VALID']
+            input_form.text,
+            os.getenv('SMSC_PHONES', ''),
+            os.getenv('SMSC_VALID', '')
         )
 
     # request_smsc = RequestSMSC(
-    #     login=app.config['LOGIN'],
-    #     password=app.config['PSW']
+    #     login=os.getenv('SMSC_LOGIN', ''),
+    #     password=os.getenv('SMSC_PSW', '')
     # )
     # sending_response = await request_smsc.send(
-    #     input_form.text, app.config['PHONES'], app.config['VALID']
+    #     input_form.text,
+    #     os.getenv('SMSC_PHONES', ''),
+    #     os.getenv('SMSC_VALID', '')
     # )
     logger.info('sending_response: %s', sending_response)
     return sending_response
@@ -116,4 +124,5 @@ async def ws():
 if __name__ == "__main__":
     logging.basicConfig()
     logger.setLevel(logging.INFO)
+    load_dotenv()
     app.run()
