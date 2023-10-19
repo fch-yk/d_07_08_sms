@@ -66,35 +66,35 @@ async def send_sms():
         return {"errorMessage": str(e.errors())}, 400
 
     phones = os.getenv('SMSC_PHONES', '')
-    with patch.object(
-        RequestSMSC,
-        'send',
-        return_value={
-            'id': 104062998,
-            'cnt': 1,
-            'cost': '4.18',
-            'balance': '770.59'
-        }
-    ):
-        request_smsc = RequestSMSC(
-            login=os.getenv('SMSC_LOGIN', ''),
-            password=os.getenv('SMSC_PSW', '')
-        )
-        sending_response = await request_smsc.send(
-            input_form.text,
-            phones,
-            os.getenv('SMSC_VALID', '')
-        )
+    # with patch.object(
+    #     RequestSMSC,
+    #     'send',
+    #     return_value={
+    #         'id': 104062998,
+    #         'cnt': 1,
+    #         'cost': '4.18',
+    #         'balance': '770.59'
+    #     }
+    # ):
+    #     request_smsc = RequestSMSC(
+    #         login=os.getenv('SMSC_LOGIN', ''),
+    #         password=os.getenv('SMSC_PSW', '')
+    #     )
+    #     sending_response = await request_smsc.send(
+    #         input_form.text,
+    #         phones,
+    #         os.getenv('SMSC_VALID', '')
+    #     )
 
-    # request_smsc = RequestSMSC(
-    #     login=os.getenv('SMSC_LOGIN', ''),
-    #     password=os.getenv('SMSC_PSW', '')
-    # )
-    # sending_response = await request_smsc.send(
-    #     input_form.text,
-    #     phones,
-    #     os.getenv('SMSC_VALID', '')
-    # )
+    request_smsc = RequestSMSC(
+        login=os.getenv('SMSC_LOGIN', ''),
+        password=os.getenv('SMSC_PSW', '')
+    )
+    sending_response = await request_smsc.send(
+        input_form.text,
+        phones,
+        os.getenv('SMSC_VALID', '')
+    )
     logger.info('sending_response: %s', sending_response)
 
     await aio_as_trio(
@@ -102,10 +102,6 @@ async def send_sms():
             sending_response['id'], phones.split(','), input_form.text
         )
     )
-    sms_ids = await aio_as_trio(app.db.list_sms_mailings())
-    logger.info('There are SMS IDs in the redis DB: %s', sms_ids)
-    sms_mailings = await aio_as_trio(app.db.get_sms_mailings(*sms_ids))
-    logger.info(sms_mailings)
 
     return sending_response
 
@@ -117,43 +113,29 @@ async def json():
 
 @app.websocket("/ws")
 async def ws():
-    delivered_01 = 0
-    delivered_02 = 0
-    total_01 = 345
-    total_02 = 3993
-
     while True:
         await trio.sleep(1)
-        timestamp = datetime.datetime.now().timestamp()
+        sms_ids = await aio_as_trio(app.db.list_sms_mailings())
+        db_sms_mailings = await aio_as_trio(app.db.get_sms_mailings(*sms_ids))
+        site_sms_mailings = []
+        for db_sms_mailing in db_sms_mailings:
+            site_sms_mailings.append(
+                {
+                    "timestamp": db_sms_mailing['created_at'],
+                    "SMSText": db_sms_mailing['text'],
+                    "mailingId": str(db_sms_mailing['sms_id']),
+                    "totalSMSAmount": len(db_sms_mailing['phones']),
+                    "deliveredSMSAmount": len(db_sms_mailing['phones']),
+                    "failedSMSAmount": 0,
+                }
+            )
+
         await websocket.send_json(
             {
                 "msgType": "SMSMailingStatus",
-                "SMSMailings": [
-                    {
-                        "timestamp": timestamp,
-                        "SMSText": "Сегодня гроза! Будьте осторожны!",
-                        "mailingId": "1",
-                        "totalSMSAmount": total_01,
-                        "deliveredSMSAmount": delivered_01,
-                        "failedSMSAmount": 5,
-                    },
-                    {
-                        "timestamp": timestamp,
-                        "SMSText": "Новогодняя акция!!! Получи скидку!!!",
-                        "mailingId": "new-year",
-                        "totalSMSAmount": total_02,
-                        "deliveredSMSAmount": delivered_02,
-                        "failedSMSAmount": 0,
-                    },
-                ]
+                "SMSMailings": site_sms_mailings
             }
         )
-        delivered_01 += total_01 // 100
-        if delivered_01 > total_01:
-            delivered_01 = 0
-        delivered_02 += total_02 // 100
-        if delivered_02 > total_02:
-            delivered_02 = 0
 
 
 async def run_server():
