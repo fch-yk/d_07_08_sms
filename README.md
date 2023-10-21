@@ -1,8 +1,10 @@
 # SMS distribution
 
-SMS distribution website. It can send SMS using the [SMSC service](https://smsc.ru/).  
+SMS distribution website. It can send SMS using the [SMSC service](https://smsc.ru/api/http/#menu).  
 [Quart](https://pypi.org/project/Quart/) is used as an asynchronous web server.  
 [Redis](https://hub.docker.com/_/redis) is used to store the history of mailings.
+
+![mailing](screenshots/mailing.gif)
 
 ## Installation
 
@@ -29,7 +31,7 @@ SMSC_PSW=replace_me
 SMSC_PHONES=+72222222222,+73333333333
 SMSC_VALID=1
 SMSC_REDIS_URL=redis://default:replace_psw$@replace_hostname:6379/0
-SMSC_REDIS_PASSWORD=replace_me
+SMSC_REDIS_PASSWORD=replace_psw
 SMSC_BINDING_ADDRESS=127.0.0.1:5000
 SMSC_DEBUG_MODE=True
 ```
@@ -86,7 +88,6 @@ Set `redis` as a hostname for `SMSC_REDIS_URL` in `.env` file:
 ```bash
 SMSC_REDIS_URL=redis://default:replace_psw$@redis:6379/0
 ```
-
 
 Run the services:
 
