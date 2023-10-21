@@ -6,7 +6,6 @@ The database layer provides a single `Database` class to interact with Redis DB.
 
 Following async methods are available:
 
-
 ### `add_sms_mailing(…)`
 
 The method adds to Redis multiple records representing a new SMS mailing.
@@ -42,6 +41,6 @@ The method returns a list of sms_id for all registered SMS mailings.
 Checkout usage examples in `example.py` file. Install and run it with command:
 
 ```sh
-$ pip install -r requirements.txt
-$ python example.py --address="redis://..." --password="..."
+pip install -r requirements.txt
+python example.py --address="redis://..." --password="..."
 ```

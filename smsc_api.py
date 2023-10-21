@@ -103,26 +103,26 @@ class RequestSMSC():
 )
 @click.option(
     '--debug_mode',
-    envvar='DEBUG_MODE',
+    envvar='SMSC_DEBUG_MODE',
     is_flag=True,
     default=False,
     help='Turn the debug mode on/off'
 )
 async def main(login, password, message, phones, valid, debug_mode):
-    if debug_mode:
-        logging.basicConfig()
-        logger.setLevel(logging.DEBUG)
+    logging.basicConfig()
+    logger.setLevel(logging.INFO)
 
-    with patch.object(
-        RequestSMSC,
-        'send',
-        return_value={'id': 104062993, 'cnt': 1}
-    ):
+    if debug_mode:
+        with patch.object(
+            RequestSMSC,
+            'send',
+            return_value={'id': 104062993, 'cnt': 1}
+        ):
+            request_smsc = RequestSMSC(login, password)
+            sending_response = await request_smsc.send(message, phones, valid)
+    else:
         request_smsc = RequestSMSC(login, password)
         sending_response = await request_smsc.send(message, phones, valid)
-
-    # request_smsc = RequestSMSC(login, password)
-    # sending_response = await request_smsc.send(message, phones, valid)
 
     logger.debug('send responsce: %s', sending_response)
     for phone in phones.split(','):
@@ -130,7 +130,7 @@ async def main(login, password, message, phones, valid, debug_mode):
             phone,
             sending_id=sending_response['id']
         )
-        logger.debug('status response: %s', status_response)
+        logger.info('status response: %s', status_response)
 
 if __name__ == '__main__':
     load_dotenv()

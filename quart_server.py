@@ -1,6 +1,4 @@
-import datetime
 import logging
-import os
 from unittest.mock import patch
 
 import aioredis
@@ -18,12 +16,6 @@ from db import Database
 from smsc_api import RequestSMSC
 
 app = QuartTrio(__name__)
-app.config.from_prefixed_env(prefix='SMSC')
-smsc_connection = RequestSMSC(
-    login=os.getenv('SMSC_LOGIN', ''),
-    password=os.getenv('SMSC_PSW', '')
-)
-
 logger = logging.getLogger(__file__)
 
 
@@ -41,7 +33,7 @@ class SMSCSettings(BaseModel):
 @app.before_serving
 async def create_db_connection():
     app.redis = aioredis.from_url(
-        os.getenv('SMSC_REDIS_URL'), decode_responses=True
+        app.config['REDIS_URL'], decode_responses=True
     )
     app.db = Database(app.redis)
 
@@ -65,36 +57,38 @@ async def send_sms():
     except ValidationError as e:
         return {"errorMessage": str(e.errors())}, 400
 
-    phones = os.getenv('SMSC_PHONES', '')
-    # with patch.object(
-    #     RequestSMSC,
-    #     'send',
-    #     return_value={
-    #         'id': 104062998,
-    #         'cnt': 1,
-    #         'cost': '4.18',
-    #         'balance': '770.59'
-    #     }
-    # ):
-    #     request_smsc = RequestSMSC(
-    #         login=os.getenv('SMSC_LOGIN', ''),
-    #         password=os.getenv('SMSC_PSW', '')
-    #     )
-    #     sending_response = await request_smsc.send(
-    #         input_form.text,
-    #         phones,
-    #         os.getenv('SMSC_VALID', '')
-    #     )
+    phones = app.config['PHONES']
+    if eval(app.config['DEBUG_MODE']):
+        with patch.object(
+            RequestSMSC,
+            'send',
+            return_value={
+                'id': 104062998,
+                'cnt': 1,
+                'cost': '4.18',
+                'balance': '770.59'
+            }
+        ):
+            request_smsc = RequestSMSC(
+                login=app.config['LOGIN'],
+                password=app.config['PSW']
+            )
+            sending_response = await request_smsc.send(
+                input_form.text,
+                phones,
+                app.config['VALID']
+            )
+    else:
+        request_smsc = RequestSMSC(
+            login=app.config['LOGIN'],
+            password=app.config['PSW']
+        )
+        sending_response = await request_smsc.send(
+            input_form.text,
+            phones,
+            app.config['VALID'],
+        )
 
-    request_smsc = RequestSMSC(
-        login=os.getenv('SMSC_LOGIN', ''),
-        password=os.getenv('SMSC_PSW', '')
-    )
-    sending_response = await request_smsc.send(
-        input_form.text,
-        phones,
-        os.getenv('SMSC_VALID', '')
-    )
     logger.info('sending_response: %s', sending_response)
 
     await aio_as_trio(
@@ -140,9 +134,11 @@ async def ws():
 
 async def run_server():
     async with trio_asyncio.open_loop():
+        app.config.from_prefixed_env(prefix='SMSC')
         config = HyperConfig()
-        config.bind = ["127.0.0.1:5000"]
+        config.bind = app.config['BINDING_ADDRESS']
         config.use_reloader = True
+        logger.info('DEBUG_MODE: %s', app.config['DEBUG_MODE'])
         await serve(app, config)
 
 if __name__ == "__main__":

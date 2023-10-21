@@ -2,7 +2,7 @@
 
 Веб-приложение для рассылки SMS по базе номеров и отслеживания их доставки.
 
-<img src="https://dvmn.org/filer/canonical/1581177685/497/">
+![site_example](screenshots/site_example.gif)
 
 ## Как запустить
 
